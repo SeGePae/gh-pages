@@ -1,3 +1,5 @@
+/* stores the keywords */
+var ENTRIES = {};
 
 function filter(what) {
   var filters = ['freetext', 'author', 'keyword', 'year'];
@@ -6,7 +8,7 @@ function filter(what) {
   for (var i=0,filter; filter = filters[i]; i++) {
     var val = document.getElementById(filter).value;
     if (val.length > 1) {
-      active_filters[filter] = val.toLowerCase();
+      active_filters[filter] = val;
     }
   }
   if (Object.keys(active_filters).length == 0) {
@@ -21,14 +23,15 @@ function filter(what) {
     var check = true;
     for (filter in active_filters) {
       if (filter in BIB[key] && typeof BIB[key][filter] == 'string'){
-        if (BIB[key][filter].toLowerCase().indexOf(active_filters[filter]) == -1) {
+        if (BIB[key][filter].toLowerCase().indexOf(active_filters[filter].toLowerCase()) == -1) {
           check = false;
           break;
         }
       }
       else if (filter == 'keyword') {
+        ENTRIES[key] = [];
         var tmp_check = false;
-        var keywords = active_filters['keyword'].toLowerCase().split(',');
+        var keywords = active_filters['keyword'].split(',');
         keywords = keywords.slice(0, keywords.length-1);
         var bibkeywords = [];
         for (var k=0,keyword; keyword=BIB[key]['keyword'][k]; k++) {
@@ -36,8 +39,9 @@ function filter(what) {
         }
         for (var k=0,keyword; keyword=keywords[k]; k++) {
           var tmp_check = false;
-          if (bibkeywords.indexOf(keyword.trim()) != -1) {
+          if (bibkeywords.indexOf(keyword.toLowerCase().trim()) != -1) {
             tmp_check = true;
+            ENTRIES[key].push(keyword);
           }
           else {
             tmp_check = false;
@@ -75,7 +79,7 @@ function fakeAlert(text){
 }
 
 function showBibTex(key){
-  fakeAlert('<div style="text-align:justify;background-color:black;color:LimeGreen;"><h4>BibTex Entry</h4><code>'+BIB[key]['bibtex']+'</code></div>');
+  fakeAlert('<div style="text-align:justify;"><h4>BibTex Entry</h4><pre>'+BIB[key]['bibtex']+'</pre></div>');
 }
 
 function showCategories(key){
@@ -100,8 +104,11 @@ function showCategories(key){
   fakeAlert('<div style="text-align:justify"><h4>Kategorien</h4>'+text+stack+'</div>');
 }
 
+function showAbstract(key){
+  var text = BIB[key]['abstract'];
+  fakeAlert('<div style="text-align:justify"><h4>Abstract</h4>'+text+'</div>');
+}
 function showKeywords(key){
-  console.log(COOC[key]);
   if (key in COOC) {
     var neighbors = Object.keys(COOC[key]);
   }
@@ -152,16 +159,34 @@ function showentries() {
       out += '<li class="paper bibentry">'+BIB[entry]['html'];
       out += '<p class="resources" style="display:flex;justify-content:space-between;" >';
       out += '<span class="keywords">';
+      var kw = 0;
+      var visited = [];
+      if (entry in ENTRIES) {
+        for (var k=0,keyword; keyword=ENTRIES[entry][k]; k++){
+          out += ' <a class="resource keyword" onclick="showKeywords(\''+keyword+'\');">'+keyword+'</a>';
+          kw += 1;
+          visited.push(keyword);
+        }
+      }
       for (var k=0,keyword; keyword=BIB[entry]['keyword'][k]; k++) {
-        if (k < 4) {
+        if (k+kw < 6 && visited.indexOf(keyword) == -1) {
           out += ' <a class="resource keyword" onclick="showKeywords(\''+keyword+'\');">'+keyword+'</a>';
         }
       }
       out +='</span>';
       out += '<span class="tags">';
-      out += '<a class="bibid resource">ID: '+entry+'</a> ' + 
+      var abs = '';
+      if (typeof BIB[entry]['abstract'] != 'undefined') {
+        abs = '<a class="abstract resource" onclick="showAbstract(\''+entry+'\');">ABSTRACT</a> ';
+      }
+
+      out += '<a class="bibid resource">ID: '+entry+'</a> ' + abs + 
         '<a class="bibtex resource" onclick="showBibTex(\''+entry+'\')">BIBTEX</a> ' +
         '<a class="category resource" onclick="showCategories(\''+entry+'\')">KATEGORIEN</a> ';
+      if ('isbn' in BIB[entry]['data']) {
+        out += '<a target="_blank" href="https://www.worldcat.org/search?q=bn%3A'+BIB[entry]['data']['isbn']+'" class="doi resource">ISBN</a>';
+
+      }
       if ('doi' in BIB[entry]['data']) {
         out += '<a target="_blank" href="http://dx.doi.org/'+BIB[entry]['data']['doi']+'" class="doi resource">DOI</a>';
       }
@@ -170,6 +195,7 @@ function showentries() {
   }
   document.getElementById('bibliography').innerHTML = out;
 }
+
 
 $( function() {
   var availableTags = Object.keys(KW);
