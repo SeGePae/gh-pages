@@ -245,3 +245,15 @@ $( function() {
       }
     });
 } );
+
+var url = window.location.href;
+if (url.indexOf('?') != -1) {
+  var params = url.split('?')[1];
+  if (params == 'headless'){
+    $('h1.main').toggle();
+    document.getElementById('content').style.backgroundColor="white";
+    $('body')[0].style.backgroundColor="white";
+    $('.footer').toggle();
+    
+  }
+}
