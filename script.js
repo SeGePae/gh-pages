@@ -66,6 +66,12 @@ function filter(what) {
   showentries();
 }
 
+function showCat(category) {
+  BIB['ACTIVE'] = KAT[category];
+  showentries();
+
+}
+
 function fakeAlert(text){
   var falert = document.createElement('div');
   falert.id = 'fake';
